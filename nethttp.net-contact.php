@@ -3,9 +3,10 @@
 /**
  * Plugin Name: nethttp.net-contact
  * Description: A custom contact form plugin for WordPress.
- * Version: 1.0
+ * Version: 1.1
  * Author: yrbane@nethttp.net
  * Requires PHP: 7.4
+ * Text Domain: default
  */
 
 /**
@@ -13,7 +14,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.0
+ * @version 1.1
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form
@@ -35,6 +36,11 @@ class Custom_Contact_Form
      */
     public function __construct()
     {
+        /**
+         *  @since 1.1
+         */
+        add_action('init', [$this, 'set_locale']);
+
         // Generate a unique form token for each session
         $this->generate_form_token();
 
@@ -53,6 +59,21 @@ class Custom_Contact_Form
 
         // Add action to handle activation message dismissal
         add_action('admin_init', [$this, 'hide_activation_message']);
+    }
+
+    /**
+     * Set the plugin's locale.
+     *
+     * This method sets the locale for the plugin's translation files based on the site's current locale
+     * and any filters applied to the 'plugin_locale' hook.
+     *
+     * @since 1.1
+     */
+    public function set_locale()
+    {
+        $domain = 'default';
+        $locale = apply_filters('plugin_locale', get_locale(), $domain);
+        load_plugin_textdomain($domain, false, basename(dirname(__FILE__)) . '/languages');
     }
 
     /**
@@ -75,11 +96,16 @@ class Custom_Contact_Form
 
             printf(
                 '<div class="notice notice-success is-dismissible custom-activation-message">
-                    <p><strong>🤩 Thank you for installing the Custom Contact Form plugin!</strong></p>
-                    <p>To configure the plugin settings, please visit the <a href="%s">Custom Contact Form Settings</a> page.</p>
-                    <form method="post" action=""><button type="submit" name="custom_contact_form_hide_activation_message" value="1" class="button">Don\'t show this message again</button></form>
+                    <p><strong>🤩 %s Custom Contact Form plugin!</strong></p>
+                    <p>%s <a href="%s">Custom Contact Form %s</a> page.</p>
+                    <form method="post" action=""><button type="submit" name="custom_contact_form_hide_activation_message" value="1" class="button">%s</button></form>
                   </div>',
-                admin_url('admin.php?page=custom_contact_form_settings')
+                __('Thank you for installing the '),
+                __('To configure the plugin settings, please visit the'),
+                admin_url('admin.php?page=custom_contact_form_settings'),
+                __('Settings'),
+                __('Don\'t show this message again')
+
             );
         }
     }
@@ -141,27 +167,27 @@ class Custom_Contact_Form
                         %s
                         <!-- Name input -->
                         <div class="mb-3">
-                            <label class="form-label" for="contact_form_name">Name</label>
-                            <input class="form-control" id="contact_form_name" name="contact_form_name" type="text" value="%s" placeholder="Name" />
+                            <label class="form-label" for="contact_form_name">' . __('Name') . '</label>
+                            <input class="form-control" id="contact_form_name" name="contact_form_name" type="text" value="%s" placeholder="' . __('Name') . '" />
                         </div>
                         <!-- Email address input -->
                         <div class="mb-3">
-                            <label class="form-label" for="contact_form_email">Email Address</label>
-                            <input class="form-control" id="contact_form_email" name="contact_form_email" type="email" value="%s" placeholder="Email Address" />
+                            <label class="form-label" for="contact_form_email">' . __('Email Address') . '</label>
+                            <input class="form-control" id="contact_form_email" name="contact_form_email" type="email" value="%s" placeholder="' . __('Email Address') . '" />
                         </div>
                         <!-- Tel input -->
                         <div class="mb-3">
-                            <label class="form-label" for="contact_form_phone">Phone</label>
-                            <input class="form-control" id="contact_form_phone" name="contact_form_phone" type="tel" value="%s" placeholder="Phone" />
+                            <label class="form-label" for="contact_form_phone">' . __('Phone') . '</label>
+                            <input class="form-control" id="contact_form_phone" name="contact_form_phone" type="tel" value="%s" placeholder="' . __('Phone') . '" />
                         </div>
                         <!-- Message input -->
                         <div class="mb-3">
-                            <label class="form-label" for="contact_form_message">Message</label>
-                            <textarea class="form-control" id="contact_form_message" name="contact_form_message" type="text" placeholder="Your message" style="height: 10rem;">%s</textarea>
+                            <label class="form-label" for="contact_form_message">' . __('Message') . '</label>
+                            <textarea class="form-control" id="contact_form_message" name="contact_form_message" type="text" placeholder="' . __('Message') . '" style="height: 10rem;">%s</textarea>
                         </div>
                         <!-- Form submit button -->
                         <div class="d-grid">
-                            <button class="btn btn-primary btn-lg wp-block-button__link wp-element-button button button-primary button-large" id="submitButton" type="submit">Send</button>
+                            <button class="btn btn-primary btn-lg wp-block-button__link wp-element-button button button-primary button-large" id="submitButton" type="submit">' . __('Send') . '</button>
                         </div>
                     </div>
                 </form>',
@@ -217,8 +243,8 @@ class Custom_Contact_Form
     public function add_admin_page(): void
     {
         add_menu_page(
-            'Custom Contact Form Settings',
-            'Contact Form',
+            'Custom Contact Form' . __('Settings'),
+            __('Contact Form'),
             'manage_options',
             'custom_contact_form_settings',
             [$this, 'render_admin_page']
@@ -242,7 +268,7 @@ class Custom_Contact_Form
     public function render_admin_page(): void
     {
 ?><div class="wrap">
-            <h2>Custom Contact Form Settings</h2>
+            <h2>Custom Contact Form <?php echo __('Settings'); ?></h2>
             <form action="options.php" method="post">
                 <?php
                 settings_fields('custom_contact_form_group') .
@@ -275,7 +301,7 @@ class Custom_Contact_Form
 
         add_settings_field(
             'custom_contact_form_email',
-            'Destination Email(s)',
+            __('Destination Email(s)'),
             [$this, 'email_field_callback'],
             'custom_contact_form_settings',
             'custom_contact_form_section'
@@ -284,7 +310,7 @@ class Custom_Contact_Form
         // Add a field for the blacklist in the admin settings
         add_settings_field(
             'custom_contact_form_blacklist',
-            'Blacklisted Countries',
+            __('Blacklisted Countries'),
             [$this, 'render_blacklist_field'],
             'custom_contact_form_settings',
             'custom_contact_form_section'
@@ -297,7 +323,7 @@ class Custom_Contact_Form
      */
     public function section_callback(): void
     {
-        echo 'Enter the email address where contact form submissions should be sent.';
+        echo __('Enter the email address where contact form submissions should be sent.');
     }
 
     /**
@@ -313,7 +339,7 @@ class Custom_Contact_Form
             $email = trim($email);
             if (!empty($email) && !is_email($email)) {
                 printf(
-                    '<div class="error-message">Invalid email address: %s</div>',
+                    '<div class="error-message">' . __('Invalid email address') . ': %s</div>',
                     esc_html($email)
                 );
             }
@@ -322,7 +348,7 @@ class Custom_Contact_Form
             '<input type="text" name="custom_contact_form_email" value="%s" />',
             esc_attr($value)
         );
-        echo '<p class="description">Enter multiple email addresses separated by commas.</p>';
+        echo '<p class="description">' . __('Enter multiple email addresses separated by commas.') . '</p>';
     }
 
     /**
@@ -350,7 +376,7 @@ class Custom_Contact_Form
                 add_settings_error(
                     'custom_contact_form_email',
                     'invalid-email',
-                    sprintf('Invalid email address: %s', esc_html($email)),
+                    sprintf(__('Invalid email address') . ': %s', esc_html($email)),
                     'error'
                 );
             }
@@ -360,7 +386,7 @@ class Custom_Contact_Form
             add_settings_error(
                 'custom_contact_form_email',
                 'invalid-email',
-                'Please enter at least one valid email address.',
+                __('Please enter at least one valid email address.'),
                 'error'
             );
             return get_option('custom_contact_form_email'); // Revert to the previous value
@@ -379,7 +405,7 @@ class Custom_Contact_Form
     {
         $blacklist = get_option('custom_contact_form_blacklist', implode(',', $this->DefaultBlacklistedCountries));
         echo '<input type="text" name="custom_contact_form_blacklist" value="' . esc_attr($blacklist) . '" />';
-        echo '<p class="description">Enter a comma-separated list of country codes to blacklist.</p>';
+        echo '<p class="description">' . __('Enter a comma-separated list of country codes to blacklist.') . '</p>';
     }
 
     /**
@@ -415,7 +441,7 @@ class Custom_Contact_Form
             $ipdata = $this->getCountryFromIP($_SERVER['REMOTE_ADDR']);
 
             if (!empty($blacklist) && in_array($ipdata['country_code'], $blacklist)) {
-                $this->display_error_message('Unauthorized submission');
+                $this->display_error_message(__('Unauthorized submission'));
                 return false;
             }
 
@@ -429,7 +455,7 @@ class Custom_Contact_Form
                 $message .= '<strong>' . $key . '</strong>: ' . $value . '<br/>';
             }
 
-            $subject = sprintf('[%s] Contact Form Submission from %s', $_SERVER['HTTP_HOST'], $name);
+            $subject = sprintf('[%s] ' . __('Contact Form Submission from') . ' %s', $_SERVER['HTTP_HOST'], $name);
             $headers = sprintf('From: %s <%s>', $name, $email);
 
             // Check if the data is not empty
@@ -441,18 +467,18 @@ class Custom_Contact_Form
 
                 // Check if the email was sent successfully and display a message
                 if ($result) {
-                    printf('<div class="success-message">Your message was sent successfully. Thank you!</div>');
+                    printf('<div class="success-message">' . __('Your message was sent successfully. Thank you!') . '</div>');
                     return true;
                 } else {
-                    $this->display_error_message('Sorry, there was a problem sending your message. Please try again later.');
+                    $this->display_error_message(__('Sorry, there was a problem sending your message. Please try again later.'));
                     return false;
                 }
             } else {
-                $this->display_error_message('Please fill in all required fields.');
+                $this->display_error_message(__('Please fill in all required fields.'));
                 return false;
             }
         } else {
-            $this->display_error_message('Unauthorized submission or invalid form token.');
+            $this->display_error_message(__('Unauthorized submission or invalid form token.'));
             return false;
         }
     }
