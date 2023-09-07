@@ -2,11 +2,16 @@
 
 /**
  * Plugin Name: nethttp.net-contact
+ * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress.
- * Version: 1.2
- * Author: yrbane@nethttp.net
+ * Version: 1.2.1
+ * Author: Barney <yrbane@nethttp.net>
+ * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
  * Text Domain: default
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Domain Path:       /languages
  */
 
 /**

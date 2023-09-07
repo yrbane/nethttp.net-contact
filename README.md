@@ -13,6 +13,7 @@ A custom contact form plugin for WordPress that allows you to easily create and 
 - Secure form submissions to prevent spam.
 - Supports multiple recipient email addresses.
 - Localisation.
+- Custom css.
 
 ## Todo
 
