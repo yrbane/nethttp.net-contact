@@ -3,7 +3,7 @@
 /**
  * Plugin Name: nethttp.net-contact
  * Description: A custom contact form plugin for WordPress.
- * Version: 1.1
+ * Version: 1.2
  * Author: yrbane@nethttp.net
  * Requires PHP: 7.4
  * Text Domain: default
@@ -59,6 +59,9 @@ class Custom_Contact_Form
 
         // Add action to handle activation message dismissal
         add_action('admin_init', [$this, 'hide_activation_message']);
+
+        // Add action to save customised CSS
+        add_action('admin_init', [$this, 'saveCustomCss']);
     }
 
     /**
@@ -273,8 +276,9 @@ class Custom_Contact_Form
                 <?php
                 settings_fields('custom_contact_form_group') .
                     do_settings_sections('custom_contact_form_settings') .
-                    submit_button()
+                    submit_button();
                 ?>
+
             </form>
         </div>
 <?php
@@ -315,6 +319,9 @@ class Custom_Contact_Form
             'custom_contact_form_settings',
             'custom_contact_form_section'
         );
+
+        // Register custom CSS customization settings
+        $this->register_custom_css_settings();
     }
 
     /**
@@ -420,6 +427,92 @@ class Custom_Contact_Form
     }
 
     /**
+     * Register custom CSS settings
+     * 
+     * @return void
+     * @since 1.2
+     */
+    public function register_custom_css_settings(): void
+    {
+        register_setting(
+            'custom_contact_form_group',
+            'custom_contact_form_custom_css',
+            [$this, 'sanitize_custom_css']
+        );
+
+        add_settings_section(
+            'custom_contact_form_css_section',
+            __('Custom CSS'),
+            [$this, 'css_section_callback'],
+            'custom_contact_form_settings'
+        );
+
+        add_settings_field(
+            'custom_contact_form_custom_css',
+            __('Custom CSS Code'),
+            [$this, 'custom_css_field_callback'],
+            'custom_contact_form_settings',
+            'custom_contact_form_css_section'
+        );
+    }
+
+    /**
+     * Callback for the CSS section.
+     *
+     * Allows customization of the form's appearance by entering your own CSS here.
+     *
+     * @since 1.2
+     */
+    public function css_section_callback(): void
+    {
+        echo __('Customize the form\'s appearance by entering your own CSS here.');
+    }
+
+    /**
+     * Callback for the custom CSS customization field.
+     * 
+     * Displays a textarea for users to enter their custom CSS styles.
+     * 
+     * @since 1.2
+     */
+    public function custom_css_field_callback(): void
+    {
+        // Get the custom CSS from the plugin settings
+        $custom_css = get_option('custom_contact_form_custom_css', file_get_contents(__DIR__ . '/css/custom-contact-form.css'));
+
+        // Display the textarea with the custom CSS
+        echo '<textarea name="custom_contact_form_custom_css" rows="8" cols="50">' . esc_textarea($custom_css) . '</textarea>';
+    }
+
+    /**
+     * Sanitises custom CSS on save.
+     *
+     * @param string $value value to sanitise.
+     * @return string sanitised CSS.
+     * @since 1.2
+     */
+    public function sanitize_custom_css($value): string
+    {
+        /**
+         * @todo css validations
+         */
+        return $value;
+    }
+
+    /**
+     * Callback for processing and saving custom CSS.
+     *
+     * @since 1.2
+     */
+    public function saveCustomCss()
+    {
+        if (isset($_POST['custom_contact_form_custom_css'])) {
+            $customCss = sanitize_text_field($_POST['custom_contact_form_custom_css']);
+            update_option('custom_contact_form_custom_css', $customCss);
+        }
+    }
+
+    /**
      * Process the contact form submission.
      * @since 1.0.0
      */
@@ -467,7 +560,7 @@ class Custom_Contact_Form
 
                 // Check if the email was sent successfully and display a message
                 if ($result) {
-                    printf('<div class="success-message">' . __('Your message was sent successfully. Thank you!') . '</div>');
+                    printf('<div class="success-message">✅ ' . __('Your message was sent successfully. Thank you!') . '</div>');
                     return true;
                 } else {
                     $this->display_error_message(__('Sorry, there was a problem sending your message. Please try again later.'));
@@ -549,7 +642,7 @@ class Custom_Contact_Form
      */
     private function display_error_message(string $message): void
     {
-        printf('<div class="error-message">%s</div>', esc_html($message));
+        printf('<div class="error-message">⚠️ %s</div>', esc_html($message));
     }
 
     /**
