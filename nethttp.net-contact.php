@@ -106,12 +106,14 @@ class Custom_Contact_Form
                 '<div class="notice notice-success is-dismissible custom-activation-message">
                     <p><strong>🤩 %s Custom Contact Form plugin!</strong></p>
                     <p>%s <a href="%s">Custom Contact Form %s</a> page.</p>
+                    <p>%s</p>
                     <form method="post" action=""><button type="submit" name="custom_contact_form_hide_activation_message" value="1" class="button">%s</button></form>
                   </div>',
                 __('Thank you for installing the '),
                 __('To configure the plugin settings, please visit the'),
                 admin_url('admin.php?page=custom_contact_form_settings'),
                 __('Settings'),
+                __('Add the shortcode [custom_contact_form] to display the form.'),
                 __('Don\'t show this message again')
 
             );
