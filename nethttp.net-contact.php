@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -67,6 +67,11 @@ class Custom_Contact_Form
 
         // Add action to save customised CSS
         add_action('admin_init', [$this, 'saveCustomCss']);
+
+        /**
+         *  @since 1.2.2
+         */
+        add_filter('wp_mail_content_type', [$this, 'set_email_content_type']);
     }
 
     /**
@@ -82,6 +87,21 @@ class Custom_Contact_Form
         $domain = 'default';
         $locale = apply_filters('plugin_locale', get_locale(), $domain);
         load_plugin_textdomain($domain, false, basename(dirname(__FILE__)) . '/languages');
+    }
+
+
+    /**
+     * Set the email content type to "text/html".
+     *
+     * This method sets the content type for email messages to "text/html".
+     * 
+     *  @since 1.2.2
+     *
+     * @return string The email content type, which is "text/html".
+     */
+    public function set_email_content_type(): string
+    {
+        return "text/html";
     }
 
     /**
