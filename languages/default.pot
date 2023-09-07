@@ -1,110 +1,136 @@
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2023-08-24 17:18+0200\n"
-"PO-Revision-Date: 2023-08-24 17:18+0200\n"
+"POT-Creation-Date: 2023-09-07 05:04+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: yrbane <yrbane@nethttp.net>\n"
 "Language-Team: \n"
-"Language: fr\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.2.2\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: Loco https://localise.biz/\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-KeywordsList: __\n"
 "X-Poedit-SearchPath-0: nethttp.net-contact.php\n"
 
-#: nethttp.net-contact.php:94
-msgid "Thank you for installing the "
-msgstr ""
-
-#: nethttp.net-contact.php:95
-msgid "To configure the plugin settings, please visit the"
-msgstr ""
-
-#: nethttp.net-contact.php:97 nethttp.net-contact.php:237
-#: nethttp.net-contact.php:262
-msgid "Settings"
-msgstr ""
-
-#: nethttp.net-contact.php:98
-msgid "Don't show this message again"
-msgstr ""
-
-#: nethttp.net-contact.php:161 nethttp.net-contact.php:162
-msgid "Name"
-msgstr ""
-
-#: nethttp.net-contact.php:166 nethttp.net-contact.php:167
-msgid "Email Address"
-msgstr ""
-
-#: nethttp.net-contact.php:171 nethttp.net-contact.php:172
-msgid "Phone"
-msgstr ""
-
-#: nethttp.net-contact.php:176 nethttp.net-contact.php:177
-msgid "Message"
-msgstr ""
-
-#: nethttp.net-contact.php:181
-msgid "Send"
-msgstr ""
-
-#: nethttp.net-contact.php:238
-msgid "Contact Form"
-msgstr ""
-
-#: nethttp.net-contact.php:295
-msgid "Destination Email(s)"
-msgstr ""
-
-#: nethttp.net-contact.php:304
-msgid "Blacklisted Countries"
+#. Description of the plugin
+msgid "A custom contact form plugin for WordPress."
 msgstr ""
 
 #: nethttp.net-contact.php:317
-msgid "Enter the email address where contact form submissions should be sent."
+msgid "Blacklisted Countries"
 msgstr ""
 
-#: nethttp.net-contact.php:333 nethttp.net-contact.php:370
-msgid "Invalid email address"
+#: nethttp.net-contact.php:250
+msgid "Contact Form"
 msgstr ""
 
-#: nethttp.net-contact.php:342
-msgid "Enter multiple email addresses separated by commas."
-msgstr ""
-
-#: nethttp.net-contact.php:380
-msgid "Please enter at least one valid email address."
-msgstr ""
-
-#: nethttp.net-contact.php:399
-msgid "Enter a comma-separated list of country codes to blacklist."
-msgstr ""
-
-#: nethttp.net-contact.php:435
-msgid "Unauthorized submission"
-msgstr ""
-
-#: nethttp.net-contact.php:449
+#: nethttp.net-contact.php:551
 msgid "Contact Form Submission from"
 msgstr ""
 
-#: nethttp.net-contact.php:461
-msgid "Your message was sent successfully. Thank you!"
+#: nethttp.net-contact.php:445
+msgid "Custom CSS"
 msgstr ""
 
-#: nethttp.net-contact.php:464
-msgid "Sorry, there was a problem sending your message. Please try again later."
+#: nethttp.net-contact.php:452
+msgid "Custom CSS Code"
 msgstr ""
 
 #: nethttp.net-contact.php:468
+msgid "Customize the form's appearance by entering your own CSS here."
+msgstr ""
+
+#: nethttp.net-contact.php:308
+msgid "Destination Email(s)"
+msgstr ""
+
+#: nethttp.net-contact.php:110
+msgid "Don't show this message again"
+msgstr ""
+
+#: nethttp.net-contact.php:178 nethttp.net-contact.php:179
+msgid "Email Address"
+msgstr ""
+
+#: nethttp.net-contact.php:415
+msgid "Enter a comma-separated list of country codes to blacklist."
+msgstr ""
+
+#: nethttp.net-contact.php:358
+msgid "Enter multiple email addresses separated by commas."
+msgstr ""
+
+#: nethttp.net-contact.php:333
+msgid "Enter the email address where contact form submissions should be sent."
+msgstr ""
+
+#: nethttp.net-contact.php:349 nethttp.net-contact.php:386
+msgid "Invalid email address"
+msgstr ""
+
+#: nethttp.net-contact.php:188 nethttp.net-contact.php:189
+msgid "Message"
+msgstr ""
+
+#: nethttp.net-contact.php:173 nethttp.net-contact.php:174
+msgid "Name"
+msgstr ""
+
+#. Name of the plugin
+msgid "nethttp.net-contact"
+msgstr ""
+
+#: nethttp.net-contact.php:183 nethttp.net-contact.php:184
+msgid "Phone"
+msgstr ""
+
+#: nethttp.net-contact.php:396
+msgid "Please enter at least one valid email address."
+msgstr ""
+
+#: nethttp.net-contact.php:570
 msgid "Please fill in all required fields."
 msgstr ""
 
-#: nethttp.net-contact.php:472
+#: nethttp.net-contact.php:193
+msgid "Send"
+msgstr ""
+
+#: nethttp.net-contact.php:109 nethttp.net-contact.php:249
+#: nethttp.net-contact.php:274
+msgid "Settings"
+msgstr ""
+
+#: nethttp.net-contact.php:566
+msgid ""
+"Sorry, there was a problem sending your message. Please try again later."
+msgstr ""
+
+#: nethttp.net-contact.php:106
+msgid "Thank you for installing the "
+msgstr ""
+
+#: nethttp.net-contact.php:107
+msgid "To configure the plugin settings, please visit the"
+msgstr ""
+
+#: nethttp.net-contact.php:537
+msgid "Unauthorized submission"
+msgstr ""
+
+#: nethttp.net-contact.php:574
 msgid "Unauthorized submission or invalid form token."
+msgstr ""
+
+#: nethttp.net-contact.php:563
+msgid "Your message was sent successfully. Thank you!"
+msgstr ""
+
+#. Author of the plugin
+msgid "yrbane@nethttp.net"
 msgstr ""
