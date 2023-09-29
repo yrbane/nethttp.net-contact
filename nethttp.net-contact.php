@@ -276,6 +276,10 @@ class Custom_Contact_Form
 
     private function verifyReCAPTCHA(): bool
     {
+        if(empty($_POST['g-recaptcha-response'])){
+            return false;
+        }
+        
         $recaptcha_response = $_POST['g-recaptcha-response'];
 
         $url = 'https://www.google.com/recaptcha/api/siteverify';
