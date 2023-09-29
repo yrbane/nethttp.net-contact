@@ -266,6 +266,10 @@ class Custom_Contact_Form
         return ob_get_clean();
     }
 
+    /**
+     * Verify reCAPTCHA
+     * @return bool
+     */
     private function verifyReCAPTCHA(): bool
     {
         if (empty($_POST['g-recaptcha-response'])) {
@@ -682,7 +686,7 @@ class Custom_Contact_Form
         ) {
             $to = get_option('custom_contact_form_email');
             if (empty($to)) {
-                $this->display_error_message('No recipient email!');
+                $this->display_error_message(__('No recipient email!'));
                 return false;
             }
 
