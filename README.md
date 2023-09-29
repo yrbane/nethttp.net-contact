@@ -35,6 +35,8 @@ A custom contact form plugin for WordPress that allows you to easily create and 
 
 - **Destination Email(s):** Enter the email address(es) where contact form submissions should be sent. Separate multiple addresses with commas.
 - **Blacklisted Countries:** Enter a comma-separated list of country codes to block submissions from those countries.
+- **reCAPTCHA Settings:** Enter site key and secret key generated at [Google reCAPTCHA](https://www.google.com/recaptcha/admin).
+- **Custom CSS:** Enter your custom CSS.
 
 ## License
 
