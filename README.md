@@ -14,11 +14,11 @@ A custom contact form plugin for WordPress that allows you to easily create and 
 - Supports multiple recipient email addresses.
 - Localisation.
 - Custom css.
+- Support for Google captcha reCAPTCHA.
 
 ## Todo
 
 - Customize form fields and labels.
-- Support for captcha
 - ???
 
 ## Installation

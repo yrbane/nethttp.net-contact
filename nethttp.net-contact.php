@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.2.2
+ * Version: 1.3
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.1
+ * @version 1.3
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form
@@ -30,6 +30,18 @@ class Custom_Contact_Form
      * @var array
      */
     private $DefaultBlacklistedCountries = ['RU', 'CN', 'IN', 'VN', 'NG', 'ID', 'BR', 'KR', 'PK', 'UA']; // Add other country codes if necessary
+
+    /**
+     * reCAPTCHA site key.
+     * @var string
+     */
+    private string $recaptcha_site_key = '';
+
+    /**
+     * reCAPTCHA secret key.
+     * @var string
+     */
+    private string $recaptcha_secret_key = '';
 
 
     /**
@@ -72,6 +84,10 @@ class Custom_Contact_Form
          *  @since 1.2.2
          */
         add_filter('wp_mail_content_type', [$this, 'set_email_content_type']);
+
+
+        $this->recaptcha_site_key = get_option('recaptcha_site_key');
+        $this->recaptcha_secret_key = get_option('recaptcha_secret_key');
     }
 
     /**
@@ -111,6 +127,11 @@ class Custom_Contact_Form
     public function admin_enqueue_scripts(): void
     {
         wp_enqueue_style('activation-message', plugin_dir_url(__FILE__) . 'css/activation-message.css');
+    }
+
+    function add_google_recaptcha_script()
+    {
+        echo '<script src="https://www.google.com/recaptcha/api.js"></script>';
     }
 
     /**
@@ -178,20 +199,33 @@ class Custom_Contact_Form
         // Enqueue the CSS for the custom contact form
         wp_enqueue_style('custom-contact-form', plugin_dir_url(__FILE__) . 'css/custom-contact-form.css');
 
+        // Add the reCAPTCHA script
+        if (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key)) {
+            add_action('wp_head', [$this, 'add_google_recaptcha_script']);
+        }
+
         // Start output buffering to capture the form HTML
         ob_start();
 
         $send_result = false;
         if (isset($_POST['contact_form_token'])) {
-            // Process the contact form if the token is present in the POST data
-            $send_result = $this->process_contact_form();
+
+            $recaptcha_response = true;
+            if (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key)) {
+                $recaptcha_response = $this->verifyReCAPTCHA();
+            }
+
+            if ($recaptcha_response) {
+                // Process the contact form if the token is present in the POST data
+                $send_result = $this->process_contact_form();
+            }
         }
 
         if (!$send_result) {
             // Initialize form data from previous submissions or empty values
             $data = $this->initialize_form_data(); // Output the HTML form with placeholders for data
             printf(
-                '<form method="post" action="#" class="custom-contact-form">
+                '<form method="post" action="#" class="custom-contact-form" >
                     <div>
                         <input type="hidden" name="contact_form_token" value="%s">
                         %s
@@ -215,6 +249,13 @@ class Custom_Contact_Form
                             <label class="form-label" for="contact_form_message">' . __('Message') . '</label>
                             <textarea class="form-control" id="contact_form_message" name="contact_form_message" type="text" placeholder="' . __('Message') . '" style="height: 10rem;">%s</textarea>
                         </div>
+
+                        ' .
+                    (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key) ?
+                        '<div class="g-recaptcha" data-sitekey="' . $this->recaptcha_site_key . '"></div>' : ''
+                    )
+                    . '
+<br/>
                         <!-- Form submit button -->
                         <div class="d-grid">
                             <button class="btn btn-primary btn-lg wp-block-button__link wp-element-button button button-primary button-large" id="submitButton" type="submit">' . __('Send') . '</button>
@@ -231,6 +272,36 @@ class Custom_Contact_Form
         }
 
         return ob_get_clean();
+    }
+
+    private function verifyReCAPTCHA(): bool
+    {
+        $recaptcha_response = $_POST['g-recaptcha-response'];
+
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
+        $data = array(
+            'secret' => $this->recaptcha_secret_key,
+            'response' => $recaptcha_response
+        );
+
+        $options = array(
+            'http' => array(
+                'method' => 'POST',
+                'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                'content' => http_build_query($data)
+            )
+        );
+
+        $context  = stream_context_create($options);
+        $verify = file_get_contents($url, false, $context);
+        $captcha_success = json_decode($verify);
+
+        if ($captcha_success->success) {
+            return true;
+        } else {
+            $this->display_error_message(__('Invalid reCAPTCHA, try again...'));
+        }
+        return false;
     }
 
     /**
@@ -279,16 +350,6 @@ class Custom_Contact_Form
             'custom_contact_form_settings',
             [$this, 'render_admin_page']
         );
-        /*
-        add_submenu_page(
-            'custom_contact_form_settings',
-            'Documentation',
-            'Documentation',
-            'manage_options',
-            'custom_contact_form_documentation',
-            [$this, 'render_documentation_page']
-        );
-        */
     }
 
     /**
@@ -323,12 +384,30 @@ class Custom_Contact_Form
             [$this, 'sanitize_email_addresses']
         );
 
+        register_setting(
+            'custom_contact_form_group',
+            'recaptcha_site_key'
+        );
+
+        register_setting(
+            'custom_contact_form_group',
+            'recaptcha_secret_key'
+        );
+
         add_settings_section(
             'custom_contact_form_section',
-            'Email Settings',
+            __('Email Settings'),
             [$this, 'section_callback'],
             'custom_contact_form_settings'
         );
+
+        add_settings_section(
+            'custom_contact_form_recaptcha_section',
+            __('reCAPTCHA Settings'),
+            [$this, 'recaptcha_section_callback'],
+            'custom_contact_form_settings'
+        );
+
 
         add_settings_field(
             'custom_contact_form_email',
@@ -347,6 +426,22 @@ class Custom_Contact_Form
             'custom_contact_form_section'
         );
 
+        add_settings_field(
+            'recaptcha_site_key',
+            'reCAPTCHA Site Key',
+            [$this, 'recaptcha_site_key_callback'],
+            'custom_contact_form_settings',
+            'custom_contact_form_recaptcha_section'
+        );
+
+        add_settings_field(
+            'recaptcha_secret_key',
+            'reCAPTCHA Secret Key',
+            [$this, 'recaptcha_secret_key_callback'],
+            'custom_contact_form_settings',
+            'custom_contact_form_recaptcha_section'
+        );
+
         // Register custom CSS customization settings
         $this->register_custom_css_settings();
     }
@@ -357,7 +452,7 @@ class Custom_Contact_Form
      */
     public function section_callback(): void
     {
-        echo __('Enter the email address where contact form submissions should be sent.');
+        echo __('Enter the email(s) address(es) where contact form submissions should be sent.');
     }
 
     /**
@@ -451,6 +546,47 @@ class Custom_Contact_Form
     function register_blacklist_setting(): void
     {
         register_setting('custom_contact_form_group', 'custom_contact_form_blacklist');
+    }
+
+    /**
+     * Callback to display the reCAPTCHA Site Key field.
+     *
+     * This function is used to display the reCAPTCHA Site Key input field
+     * on the contact form's admin settings page.
+     * @return void
+     * @since 1.3.0
+     */
+    public function recaptcha_site_key_callback(): void
+    {
+        $site_key = get_option('recaptcha_site_key', '');
+        echo '<input type="text" id="recaptcha_site_key" name="recaptcha_site_key" value="' . esc_attr($site_key) . '" />';
+    }
+
+    /**
+     * Callback to display the reCAPTCHA Secret Key field.
+     *
+     * This function is used to display the reCAPTCHA Secret Key input field
+     * on the contact form's admin settings page.
+     * @return void
+     * @since 1.3.0
+     */
+    public function recaptcha_secret_key_callback(): void
+    {
+        $secret_key = get_option('recaptcha_secret_key', '');
+        echo '<input type="text" id="recaptcha_secret_key" name="recaptcha_secret_key" value="' . esc_attr($secret_key) . '" />';
+    }
+
+    /**
+     * Callback for the reCAPTCHA settings section.
+     *
+     * This function is used to display a description of the reCAPTCHA settings section
+     * on the contact form's admin settings page.
+     * @return void
+     * @since 1.3.0 
+     */
+    public function recaptcha_section_callback(): void
+    {
+        echo __('Configure reCAPTCHA settings for your form.');
     }
 
     /**
@@ -567,11 +703,18 @@ class Custom_Contact_Form
 
             $name = sanitize_text_field($_POST['contact_form_name']);
             $email = sanitize_email($_POST['contact_form_email']);
-
             $message = esc_textarea($_POST['contact_form_message']);
+
+            unset($_POST['contact_form_name'], $_POST['contact_form_email'], $_POST['contact_form_message']);
+            
             $message .= '<hr/>';
             $message .= '<strong>USER AGENT</strong>: ' . $_SERVER['HTTP_USER_AGENT'] . '<br/>';
             foreach ($ipdata as $key => $value) {
+                $message .= '<strong>' . $key . '</strong>: ' . $value . '<br/>';
+            }
+
+            $message .= '<hr/>';
+            foreach ($_POST as $key => $value) {
                 $message .= '<strong>' . $key . '</strong>: ' . $value . '<br/>';
             }
 
@@ -582,7 +725,7 @@ class Custom_Contact_Form
             if (!empty($name) && !empty($email) && !empty($message)) {
                 apply_filters('wp_mail_content_type', 'text/html');
                 $result = wp_mail($to, $subject, $message, $headers);
-                var_dump($result);
+                
                 apply_filters('wp_mail_content_type', 'text/plain');
 
                 // Check if the email was sent successfully and display a message
