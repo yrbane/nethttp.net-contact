@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.3
+ * Version: 1.3.2
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.3
+ * @version 1.3.2
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form
@@ -88,6 +88,8 @@ class Custom_Contact_Form
 
         $this->recaptcha_site_key = get_option('recaptcha_site_key');
         $this->recaptcha_secret_key = get_option('recaptcha_secret_key');
+
+        
     }
 
     /**
@@ -127,11 +129,6 @@ class Custom_Contact_Form
     public function admin_enqueue_scripts(): void
     {
         wp_enqueue_style('activation-message', plugin_dir_url(__FILE__) . 'css/activation-message.css');
-    }
-
-    function add_google_recaptcha_script()
-    {
-        echo '<script src="https://www.google.com/recaptcha/api.js"></script>';
     }
 
     /**
@@ -199,11 +196,6 @@ class Custom_Contact_Form
         // Enqueue the CSS for the custom contact form
         wp_enqueue_style('custom-contact-form', plugin_dir_url(__FILE__) . 'css/custom-contact-form.css');
 
-        // Add the reCAPTCHA script
-        if (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key)) {
-            add_action('wp_head', [$this, 'add_google_recaptcha_script']);
-        }
-
         // Start output buffering to capture the form HTML
         ob_start();
 
@@ -252,7 +244,7 @@ class Custom_Contact_Form
 
                         ' .
                     (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key) ?
-                        '<div class="g-recaptcha" data-sitekey="' . $this->recaptcha_site_key . '"></div>' : ''
+                        '<script src="https://www.google.com/recaptcha/api.js"></script><div class="g-recaptcha" data-sitekey="' . $this->recaptcha_site_key . '"></div>' : ''
                     )
                     . '
 <br/>
@@ -276,10 +268,10 @@ class Custom_Contact_Form
 
     private function verifyReCAPTCHA(): bool
     {
-        if(empty($_POST['g-recaptcha-response'])){
+        if (empty($_POST['g-recaptcha-response'])) {
             return false;
         }
-        
+
         $recaptcha_response = $_POST['g-recaptcha-response'];
 
         $url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -710,7 +702,7 @@ class Custom_Contact_Form
             $message = esc_textarea($_POST['contact_form_message']);
 
             unset($_POST['contact_form_name'], $_POST['contact_form_email'], $_POST['contact_form_message']);
-            
+
             $message .= '<hr/>';
             $message .= '<strong>USER AGENT</strong>: ' . $_SERVER['HTTP_USER_AGENT'] . '<br/>';
             foreach ($ipdata as $key => $value) {
@@ -729,7 +721,7 @@ class Custom_Contact_Form
             if (!empty($name) && !empty($email) && !empty($message)) {
                 apply_filters('wp_mail_content_type', 'text/html');
                 $result = wp_mail($to, $subject, $message, $headers);
-                
+
                 apply_filters('wp_mail_content_type', 'text/plain');
 
                 // Check if the email was sent successfully and display a message
