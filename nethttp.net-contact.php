@@ -586,7 +586,7 @@ class Custom_Contact_Form
      */
     public function recaptcha_section_callback(): void
     {
-        echo __('Configure reCAPTCHA settings for your form.');
+        echo __('Configure reCAPTCHA settings for your form. Get your keys at').' <a href="https://www.google.com/recaptcha/admin">https://www.google.com/recaptcha/admin</a>.';
     }
 
     /**
