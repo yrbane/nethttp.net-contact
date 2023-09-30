@@ -11,6 +11,8 @@ A custom contact form plugin for WordPress that allows you to easily create and 
 - Easily create and manage contact forms.
 - Automatically blocks submissions from blacklisted countries.
 - Secure form submissions to prevent spam.
+- If submissions are not valid, ips are banned and cannot resubmit contact form.
+- Ips who are sending from same email or sending same message as another banned ip are also banned.
 - Supports multiple recipient email addresses.
 - Localisation.
 - Custom css.
@@ -19,6 +21,7 @@ A custom contact form plugin for WordPress that allows you to easily create and 
 ## Todo
 
 - Customize form fields and labels.
+- Manage banned Ip
 - ???
 
 ## Installation
