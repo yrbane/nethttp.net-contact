@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2023-09-29 06:49+0000\n"
+"POT-Creation-Date: 2023-09-30 14:37+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: yrbane <yrbane@nethttp.net>\n"
 "Language-Team: \n"
@@ -24,7 +24,7 @@ msgid ""
 "your posts or pages."
 msgstr ""
 
-#: nethttp.net-contact.php:157
+#: nethttp.net-contact.php:310
 msgid "Add the shortcode [custom_contact_form] to display the form."
 msgstr ""
 
@@ -32,59 +32,63 @@ msgstr ""
 msgid "Barney <yrbane@nethttp.net>"
 msgstr ""
 
-#: nethttp.net-contact.php:423
+#: nethttp.net-contact.php:640
 msgid "Blacklisted Countries"
 msgstr ""
 
-#: nethttp.net-contact.php:589
-msgid "Configure reCAPTCHA settings for your form."
+#: nethttp.net-contact.php:806
+msgid "Configure reCAPTCHA settings for your form. Get your keys at"
 msgstr ""
 
-#: nethttp.net-contact.php:348
+#: nethttp.net-contact.php:565
 msgid "Contact Form"
 msgstr ""
 
-#: nethttp.net-contact.php:721
+#: nethttp.net-contact.php:958
 msgid "Contact Form Submission from"
 msgstr ""
 
-#: nethttp.net-contact.php:608
+#: nethttp.net-contact.php:825
 msgid "Custom CSS"
 msgstr ""
 
-#: nethttp.net-contact.php:615
+#: nethttp.net-contact.php:832
 msgid "Custom CSS Code"
 msgstr ""
 
-#: nethttp.net-contact.php:631
+#: nethttp.net-contact.php:848
 msgid "Customize the form's appearance by entering your own CSS here."
 msgstr ""
 
-#: nethttp.net-contact.php:414
+#: nethttp.net-contact.php:167
+msgid "Delete all plugin data"
+msgstr ""
+
+#: nethttp.net-contact.php:631
 msgid "Destination Email(s)"
 msgstr ""
 
-#: nethttp.net-contact.php:158
+#: nethttp.net-contact.php:311
 msgid "Don't show this message again"
 msgstr ""
 
-#: nethttp.net-contact.php:239 nethttp.net-contact.php:240
+#: nethttp.net-contact.php:393 nethttp.net-contact.php:394
 msgid "Email Address"
 msgstr ""
 
-#: nethttp.net-contact.php:399
+#: nethttp.net-contact.php:616
 msgid "Email Settings"
 msgstr ""
 
-#: nethttp.net-contact.php:537
+#: nethttp.net-contact.php:754
 msgid "Enter a comma-separated list of country codes to blacklist."
 msgstr ""
 
-#: nethttp.net-contact.php:480
+#: nethttp.net-contact.php:697
 msgid "Enter multiple email addresses separated by commas."
 msgstr ""
 
-#: nethttp.net-contact.php:455
+#: nethttp.net-contact.php:672
 msgid ""
 "Enter the email(s) address(es) where contact form submissions should be sent."
 msgstr ""
@@ -97,19 +101,19 @@ msgstr ""
 msgid "https://github.com/yrbane/nethttp.net-contact"
 msgstr ""
 
-#: nethttp.net-contact.php:471 nethttp.net-contact.php:508
+#: nethttp.net-contact.php:688 nethttp.net-contact.php:725
 msgid "Invalid email address"
 msgstr ""
 
-#: nethttp.net-contact.php:302
+#: nethttp.net-contact.php:519
 msgid "Invalid reCAPTCHA, try again..."
 msgstr ""
 
-#: nethttp.net-contact.php:249 nethttp.net-contact.php:250
+#: nethttp.net-contact.php:403 nethttp.net-contact.php:404
 msgid "Message"
 msgstr ""
 
-#: nethttp.net-contact.php:234 nethttp.net-contact.php:235
+#: nethttp.net-contact.php:388 nethttp.net-contact.php:389
 msgid "Name"
 msgstr ""
 
@@ -117,52 +121,87 @@ msgstr ""
 msgid "nethttp.net-contact"
 msgstr ""
 
-#: nethttp.net-contact.php:244 nethttp.net-contact.php:245
+#: nethttp.net-contact.php:968
+msgid "No recipient email!"
+msgstr ""
+
+#: nethttp.net-contact.php:398 nethttp.net-contact.php:399
 msgid "Phone"
 msgstr ""
 
-#: nethttp.net-contact.php:518
+#: nethttp.net-contact.php:735
 msgid "Please enter at least one valid email address."
 msgstr ""
 
-#: nethttp.net-contact.php:740
+#: nethttp.net-contact.php:460
+msgid "Please enter your email address."
+msgstr ""
+
+#: nethttp.net-contact.php:464
+msgid "Please enter your message."
+msgstr ""
+
+#: nethttp.net-contact.php:456
+msgid "Please enter your name."
+msgstr ""
+
+#: nethttp.net-contact.php:984
 msgid "Please fill in all required fields."
 msgstr ""
 
-#: nethttp.net-contact.php:406
+#: nethttp.net-contact.php:469
+msgid "Please verify that you are not a robot."
+msgstr ""
+
+#: nethttp.net-contact.php:623
 msgid "reCAPTCHA Settings"
 msgstr ""
 
-#: nethttp.net-contact.php:261
+#: nethttp.net-contact.php:415
 msgid "Send"
 msgstr ""
 
-#: nethttp.net-contact.php:156 nethttp.net-contact.php:347
-#: nethttp.net-contact.php:362
+#: nethttp.net-contact.php:165 nethttp.net-contact.php:309
+#: nethttp.net-contact.php:564 nethttp.net-contact.php:579
 msgid "Settings"
 msgstr ""
 
-#: nethttp.net-contact.php:736
+#: nethttp.net-contact.php:980
 msgid ""
 "Sorry, there was a problem sending your message. Please try again later."
 msgstr ""
 
-#: nethttp.net-contact.php:153
+#: nethttp.net-contact.php:306
 msgid "Thank you for installing the "
 msgstr ""
 
-#: nethttp.net-contact.php:154
+#: nethttp.net-contact.php:166
+msgid ""
+"This will delete all plugin data, including the blacklist and all banned IPs."
+msgstr ""
+
+#: nethttp.net-contact.php:307
 msgid "To configure the plugin settings, please visit the"
 msgstr ""
 
-#: nethttp.net-contact.php:700
+#: nethttp.net-contact.php:163
+msgid "To delete all plugin data, please visit the"
+msgstr ""
+
+#: nethttp.net-contact.php:374 nethttp.net-contact.php:907
+#: nethttp.net-contact.php:914 nethttp.net-contact.php:922
+#: nethttp.net-contact.php:934
 msgid "Unauthorized submission"
 msgstr ""
 
-#: nethttp.net-contact.php:744
+#: nethttp.net-contact.php:988
 msgid "Unauthorized submission or invalid form token."
 msgstr ""
 
-#: nethttp.net-contact.php:733
+#: nethttp.net-contact.php:162
+msgid "You are about to deactivate the"
+msgstr ""
+
+#: nethttp.net-contact.php:977
 msgid "Your message was sent successfully. Thank you!"
 msgstr ""

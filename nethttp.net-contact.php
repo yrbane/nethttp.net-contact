@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.3.2
+ * Version: 1.3.3
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.3.2
+ * @version 1.3.3
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form
@@ -30,6 +30,12 @@ class Custom_Contact_Form
     const OPTION_RECAPTCHA_SITE_KEY = 'recaptcha_site_key';
     const OPTION_RECAPTCHA_SECRET_KEY = 'recaptcha_secret_key';
     const OPTION_CUSTOM_CSS = 'custom_contact_form_custom_css';
+    const OPTION_CUSTOM_CONTACT_FORM_ID = 'custom_contact_form';
+
+    /**
+     * @const string banned ips table name
+     */
+    const BANNED_IPS_TABLE_NAME = 'banned_ips';
 
     /**
      * Blacklist of country codes to block.
@@ -49,6 +55,10 @@ class Custom_Contact_Form
      */
     private string $recaptcha_secret_key = '';
 
+    /**
+     * @var wpdb
+     */
+    private $wpdb;
 
     /**
      * Custom_Contact_Form constructor.
@@ -59,14 +69,23 @@ class Custom_Contact_Form
      */
     public function __construct()
     {
+        global $wpdb;
+
+        $this->wpdb = $wpdb;
+
         // Generate a unique form token for each session
         $this->generate_form_token();
-        
+
 
         $this->initWordpressHooks();
 
         $this->recaptcha_site_key = get_option(self::OPTION_RECAPTCHA_SITE_KEY);
         $this->recaptcha_secret_key = get_option(self::OPTION_RECAPTCHA_SECRET_KEY);
+
+        // Ask user if they want to delete all plugin data
+        if (isset($_GET['delete_plugin_data']) && $_GET['delete_plugin_data'] === 'true') {
+            $this->delete_plugin_data();
+        }
     }
 
     /**
@@ -77,7 +96,7 @@ class Custom_Contact_Form
     private function initWordpressHooks(): void
     {
         add_action('init', [$this, 'set_locale']);
-        
+
         // Register the shortcode for rendering the contact form
         add_shortcode('custom_contact_form', [$this, 'render_contact_form']);
 
@@ -101,6 +120,132 @@ class Custom_Contact_Form
 
         // Add action to send email
         add_filter('wp_mail_content_type', [$this, 'set_email_content_type']);
+
+        // Add action on plugin activation
+        register_activation_hook(__FILE__, [$this, 'on_activation']);
+
+        // Add action on plugin deactivation
+        register_deactivation_hook(__FILE__, [$this, 'on_deactivation']);
+    }
+
+    /**
+     * Called on plugin activation.
+     * @since 1.3.3
+     *
+     */
+    public function on_activation(): void
+    {
+        // Set the default blacklist
+        update_option(self::OPTION_BLACKLISTED_COUNTRIES, implode(',', $this->DefaultBlacklistedCountries));
+
+        // Set the default custom CSS
+        update_option(self::OPTION_CUSTOM_CSS, file_get_contents(__DIR__ . '/css/custom-contact-form.css'));
+
+        // Create a database table for storing banned IPs
+        $this->create_banned_ips_table();
+    }
+
+    /**
+     * Called on plugin deactivation.
+     * @since 1.3.3
+     * @return void
+     */
+    public function on_deactivation(): void
+    {   // Display a confirmation message and a link to delete all plugin data.
+        printf(
+            '<div class="notice notice-warning is-dismissible custom-activation-message">
+                <p><strong>🤔 %s Custom Contact Form plugin!</strong></p>
+                <p>%s <a href="%s">Custom Contact Form %s</a> page.</p>
+                <p>%s</p>
+                <form method="get" action=""><button type="submit" name="delete_plugin_data" value="true" class="button">%s</button></form>
+              </div>',
+            __('You are about to deactivate the'),
+            __('To delete all plugin data, please visit the'),
+            admin_url('admin.php?page=custom_contact_form_settings'),
+            __('Settings'),
+            __('This will delete all plugin data, including the blacklist and all banned IPs.'),
+            __('Delete all plugin data')
+        );
+    }
+
+   
+    /**
+     * Delete all plugin data.
+     * @since 1.3.3
+     * @return void
+     * @throws Exception
+     */
+    private function delete_plugin_data(): void
+    {
+        if(WP_DEBUG){
+            return;
+        }    
+        // Delete all options
+        delete_option(self::OPTION_HIDE_ACTIVATION_MESSAGE);
+        delete_option(self::OPTION_BLACKLISTED_COUNTRIES);
+        delete_option(self::OPTION_RECIPIENT_EMAILS);
+        delete_option(self::OPTION_RECAPTCHA_SITE_KEY);
+        delete_option(self::OPTION_RECAPTCHA_SECRET_KEY);
+        delete_option(self::OPTION_CUSTOM_CSS);
+
+        // Delete the banned IPs table
+        $this->delete_banned_ips_table();
+    }
+
+    /**
+     * Deletes the database table for storing banned IPs.
+     * @since 1.3.3
+     */
+    private function delete_banned_ips_table(): void
+    {
+        $table_name = $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME;
+        $sql = "DROP TABLE IF EXISTS $table_name;";
+        $this->wpdb->query($sql);
+    }
+
+    /**
+     * Creates a database table for storing banned IPs. With IP,USER AGENT, Country Code, city, Date, used emails (as json) if these are known.
+     * @since 1.3.3
+     */
+    private function create_banned_ips_table(): void
+    {
+        $table_name = $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME;
+        $charset_collate = $this->wpdb->get_charset_collate();
+        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            ip varchar(55) NOT NULL,
+            user_agent varchar(255) NOT NULL,
+            country_name varchar(255) NOT NULL,
+            country_code varchar(2) NOT NULL,
+            city varchar(255) NOT NULL,
+            `date` datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            email varchar(255) NOT NULL,
+            `message` text NOT NULL,
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * SQL Query wrapper to execute and log all queries on banned_ips table.
+     * Return results of the query.
+     * @param string $sql
+     * @return array     *
+     */
+    private function query(string $sql,$sql_param=null): array
+    {
+        $table_name = $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME;
+        if(is_null($sql_param)){
+            $this->wpdb->query(sprintf($sql, $table_name));
+        }
+        else{
+            $sql = $this->wpdb->prepare( $sql , $sql_param );
+            return $this->wpdb->get_results( $sql );
+        }
+        
+        
+        return $this->wpdb->last_result;
     }
 
     /**
@@ -156,7 +301,7 @@ class Custom_Contact_Form
                     <p><strong>🤩 %s Custom Contact Form plugin!</strong></p>
                     <p>%s <a href="%s">Custom Contact Form %s</a> page.</p>
                     <p>%s</p>
-                    <form method="post" action=""><button type="submit" name="'.self::OPTION_HIDE_ACTIVATION_MESSAGE.'" value="1" class="button">%s</button></form>
+                    <form method="post" action=""><button type="submit" name="' . self::OPTION_HIDE_ACTIVATION_MESSAGE . '" value="1" class="button">%s</button></form>
                   </div>',
                 __('Thank you for installing the '),
                 __('To configure the plugin settings, please visit the'),
@@ -224,13 +369,19 @@ class Custom_Contact_Form
             }
         }
 
+        // Don't display the form if ip is banned
+        if ($this->is_ip_banned($_SERVER['REMOTE_ADDR'])) {
+            $this->display_error_message(__('Unauthorized submission'));
+            return ob_get_clean();
+        }
+
         if (!$send_result) {
             // Initialize form data from previous submissions or empty values
             $data = $this->initialize_form_data(); // Output the HTML form with placeholders for data
             printf(
-                '<form method="post" action="#" class="custom-contact-form" >
+                '<form method="post" action="?spam=true" class="custom-contact-form" id="' . self::OPTION_CUSTOM_CONTACT_FORM_ID . '">
                     <div>
-                        <input type="hidden" name="contact_form_token" value="%s">
+                        <input type="hidden" id="contact_form_token" name="contact_form_token" value="%s">
                         %s
                         <!-- Name input -->
                         <div class="mb-3">
@@ -265,7 +416,7 @@ class Custom_Contact_Form
                         </div>
                     </div>
                 </form>',
-                $_SESSION['contact_form_token'],
+                'DefaultToken', //Wait a few seconds before filling the token value by JS
                 wp_nonce_field('contact', 'contact_form_nonce'),
                 $data['name'],
                 $data['email'],
@@ -273,8 +424,63 @@ class Custom_Contact_Form
                 $data['message']
             );
         }
-
+        $this->renderContactFormScript();
         return ob_get_clean();
+    }
+
+    /**
+     * Renders the contact form script.
+     * @since 1.0.0
+     */
+    private function renderContactFormScript(): void
+    {
+?>
+        <script>
+            let contactFormId = "<?php echo self::OPTION_CUSTOM_CONTACT_FORM_ID; ?>";
+            let sessionToken = "<?php echo $_SESSION['contact_form_token']; ?>";
+            document.addEventListener("DOMContentLoaded", function() {
+
+                setTimeout(function() {
+                    //For more security wait 5 seconds before filling the session token value
+                    document.getElementById("contact_form_token").value = sessionToken;
+
+                    //Change the submit action of the form to the current page
+                    document.getElementById(contactFormId).setAttribute("action", window.location.href);
+
+                }, 5000);
+
+                //Submit the form
+                document.getElementById(contactFormId).addEventListener("submit", function(event) {
+                    event.preventDefault();
+                    if (document.getElementById("contact_form_name").value === "") {
+                        alert("<?php echo __('Please enter your name.'); ?>");
+                        return false;
+                    }
+                    if (document.getElementById("contact_form_email").value === "") {
+                        alert("<?php echo __('Please enter your email address.'); ?>");
+                        return false;
+                    }
+                    if (document.getElementById("contact_form_message").value === "") {
+                        alert("<?php echo __('Please enter your message.'); ?>");
+                        return false;
+                    }
+                    <?php if (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key)) : ?>
+                        if (grecaptcha.getResponse() === "") {
+                            alert("<?php echo __('Please verify that you are not a robot.'); ?>");
+                            return false;
+                        }
+                    <?php endif; ?>
+                    document.getElementById(contactFormId).submit();
+                });
+            });
+        </script>
+        <?php if (!empty($this->recaptcha_site_key) && !empty($this->recaptcha_secret_key)) : ?>
+            <script>
+                function onSubmit(token) {
+                    document.getElementById("contactForm").submit();
+                }
+            </script>
+        <?php endif;
     }
 
     /**
@@ -306,7 +512,7 @@ class Custom_Contact_Form
         $context  = stream_context_create($options);
         $verify = file_get_contents($url, false, $context);
         $captcha_success = json_decode($verify);
-
+        $_POST['g-recaptcha-response'] = $captcha_success;
         if ($captcha_success->success) {
             return true;
         } else {
@@ -369,7 +575,7 @@ class Custom_Contact_Form
      */
     public function render_admin_page(): void
     {
-?><div class="wrap">
+        ?><div class="wrap">
             <h2>Custom Contact Form <?php echo __('Settings'); ?></h2>
             <form action="options.php" method="post">
                 <?php
@@ -570,7 +776,7 @@ class Custom_Contact_Form
     public function recaptcha_site_key_callback(): void
     {
         $site_key = get_option(self::OPTION_RECAPTCHA_SITE_KEY, '');
-        echo '<input type="text" id='.self::OPTION_RECAPTCHA_SITE_KEY.' name="'.self::OPTION_RECAPTCHA_SITE_KEY.'" value="' . esc_attr($site_key) . '" />';
+        echo '<input type="text" id=' . self::OPTION_RECAPTCHA_SITE_KEY . ' name="' . self::OPTION_RECAPTCHA_SITE_KEY . '" value="' . esc_attr($site_key) . '" />';
     }
 
     /**
@@ -584,7 +790,7 @@ class Custom_Contact_Form
     public function recaptcha_secret_key_callback(): void
     {
         $secret_key = get_option(self::OPTION_RECAPTCHA_SECRET_KEY, '');
-        echo '<input type="text" id="'.self::OPTION_RECAPTCHA_SECRET_KEY.'" name="'.self::OPTION_RECAPTCHA_SECRET_KEY.'" value="' . esc_attr($secret_key) . '" />';
+        echo '<input type="text" id="' . self::OPTION_RECAPTCHA_SECRET_KEY . '" name="' . self::OPTION_RECAPTCHA_SECRET_KEY . '" value="' . esc_attr($secret_key) . '" />';
     }
 
     /**
@@ -597,7 +803,7 @@ class Custom_Contact_Form
      */
     public function recaptcha_section_callback(): void
     {
-        echo __('Configure reCAPTCHA settings for your form. Get your keys at').' <a href="https://www.google.com/recaptcha/admin">https://www.google.com/recaptcha/admin</a>.';
+        echo __('Configure reCAPTCHA settings for your form. Get your keys at') . ' <a href="https://www.google.com/recaptcha/admin">https://www.google.com/recaptcha/admin</a>.';
     }
 
     /**
@@ -655,7 +861,7 @@ class Custom_Contact_Form
         $custom_css = get_option(self::OPTION_CUSTOM_CSS, file_get_contents(__DIR__ . '/css/custom-contact-form.css'));
 
         // Display the textarea with the custom CSS
-        echo '<textarea name="'.self::OPTION_CUSTOM_CSS.'" rows="8" cols="50">' . esc_textarea($custom_css) . '</textarea>';
+        echo '<textarea name="' . self::OPTION_CUSTOM_CSS . '" rows="8" cols="50">' . esc_textarea($custom_css) . '</textarea>';
     }
 
     /**
@@ -695,9 +901,26 @@ class Custom_Contact_Form
         if (
             $this->is_valid_submission()
         ) {
-            $to = get_option(self::OPTION_RECIPIENT_EMAILS);
-            if (empty($to)) {
-                $this->display_error_message(__('No recipient email!'));
+            // Look if the ip is banned
+            $ip = $_SERVER['REMOTE_ADDR'];
+            if ($this->is_ip_banned($ip)) {
+                $this->display_error_message(__('Unauthorized submission'));
+                return false;
+            }
+
+            // Check if the message is in banned_ips table
+            $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE `message` = '" . esc_sql($_POST['contact_form_message']) . "'");
+            if (!empty($result)) {
+                $this->display_error_message(__('Unauthorized submission'));
+                $this->ban_ip($ip);
+                return false;
+            }
+
+            // Check if the email is in banned_ips table
+            $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE `email` = '" . esc_sql($_POST['contact_form_email']) . "'");
+            if (!empty($result)) {
+                $this->display_error_message(__('Unauthorized submission'));
+                $this->ban_ip($ip);
                 return false;
             }
 
@@ -726,6 +949,9 @@ class Custom_Contact_Form
 
             $message .= '<hr/>';
             foreach ($_POST as $key => $value) {
+                if (is_object($value)) {
+                    $value = '<pre>' . print_r((array) $value, true) . '</pre>';
+                }
                 $message .= '<strong>' . $key . '</strong>: ' . $value . '<br/>';
             }
 
@@ -735,7 +961,14 @@ class Custom_Contact_Form
             // Check if the data is not empty
             if (!empty($name) && !empty($email) && !empty($message)) {
                 apply_filters('wp_mail_content_type', 'text/html');
-                $result = wp_mail(explode(',',$to), $subject, $message, $headers);
+
+                // Get the recipient email address
+                $to = get_option(self::OPTION_RECIPIENT_EMAILS);
+                if (empty($to)) {
+                    $this->display_error_message(__('No recipient email!'));
+                    return false;
+                }
+                $result = wp_mail(explode(',', $to), $subject, $message, $headers);
 
                 apply_filters('wp_mail_content_type', 'text/plain');
 
@@ -765,6 +998,8 @@ class Custom_Contact_Form
     private function is_valid_submission(): bool
     {
         if (
+            isset($_SERVER['HTTP_USER_AGENT']) &&
+            !isset($_GET['spam']) &&
             wp_verify_nonce($_POST['contact_form_nonce'], 'contact') &&
             $this->is_same_origin_submission() &&
             isset($_POST['contact_form_token']) &&
@@ -773,7 +1008,71 @@ class Custom_Contact_Form
         ) {
             return true;
         }
+
+        // If the form submission is invalid, ban the ip address of that client
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $this->ban_ip($ip);
+
         return false;
+    }
+
+    /**
+     * Ban an IP address.
+     *
+     * This method adds the specified IP address to the .htaccess file to prevent it from accessing the site.
+     *
+     * @param string $ip The IP address to ban.
+     *
+     * @since 1.3.3
+     */
+    private function ban_ip(string $ip): void
+    {
+        // if the server is apache
+        if (strpos($_SERVER['SERVER_SOFTWARE'], 'Apache') !== false) {
+            $htaccess = ABSPATH . '.htaccess';
+
+            if (!file_exists($htaccess)) {
+                // Create the .htaccess file if it doesn't exist
+                touch($htaccess);
+            }
+
+            // Check if the .htaccess file exists
+            if (file_exists($htaccess)) {
+                // Check if the IP address is not already banned
+                if (strpos(file_get_contents($htaccess), $ip) === false) {
+                    // Add the IP address to the .htaccess file
+                    file_put_contents($htaccess, PHP_EOL . 'deny from ' . $ip, FILE_APPEND);
+                }
+            }
+        }
+
+        // store banned ip in the database table banned_ips
+        $geolocation = $this->getCountryFromIP($ip);
+        $table_name = $this->wpdb->prefix . 'banned_ips';
+        $this->wpdb->insert(
+            $table_name,
+            array(
+                'ip' => $ip,
+                'country_code' => $geolocation['country_code'],
+                'country_name' => $geolocation['country_name'],
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'city' => $geolocation['city'],
+                'email' => $_POST['contact_form_email'] ?? 'unknown',
+                'message' => $_POST['contact_form_message'] ?? 'unknown',
+                'date' => current_time('mysql')
+            )
+        );
+    }
+
+    /**
+     * Check if the IP address is banned. Look in db if ip exists in the table banned_ips. 
+     * @param string $ip
+     * @return bool
+     */
+    private function is_ip_banned(string $ip): bool
+    {
+        $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE ip = %s",$ip);
+        return !empty($result);
     }
 
     /**
