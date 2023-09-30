@@ -24,6 +24,12 @@
  */
 class Custom_Contact_Form
 {
+    const OPTION_HIDE_ACTIVATION_MESSAGE = 'custom_contact_form_hide_activation_message';
+    const OPTION_BLACKLISTED_COUNTRIES = 'custom_contact_form_blacklist';
+    const OPTION_RECIPIENT_EMAILS = 'custom_contact_form_email';
+    const OPTION_RECAPTCHA_SITE_KEY = 'recaptcha_site_key';
+    const OPTION_RECAPTCHA_SECRET_KEY = 'recaptcha_secret_key';
+    const OPTION_CUSTOM_CSS = 'custom_contact_form_custom_css';
 
     /**
      * Blacklist of country codes to block.
@@ -53,19 +59,32 @@ class Custom_Contact_Form
      */
     public function __construct()
     {
-        /**
-         *  @since 1.1
-         */
-        add_action('init', [$this, 'set_locale']);
-
         // Generate a unique form token for each session
         $this->generate_form_token();
+        
 
+        $this->initWordpressHooks();
+
+        $this->recaptcha_site_key = get_option(self::OPTION_RECAPTCHA_SITE_KEY);
+        $this->recaptcha_secret_key = get_option(self::OPTION_RECAPTCHA_SECRET_KEY);
+    }
+
+    /**
+     * Initializes WordPress hooks.
+     *
+     * @since 1.3.3
+     */
+    private function initWordpressHooks(): void
+    {
+        add_action('init', [$this, 'set_locale']);
+        
         // Register the shortcode for rendering the contact form
         add_shortcode('custom_contact_form', [$this, 'render_contact_form']);
 
         // Add the admin menu and initialize settings
         add_action('admin_menu', [$this, 'add_admin_page']);
+
+        // Add action to initialize admin settings
         add_action('admin_init', [$this, 'admin_init']);
 
         // Add action to display activation message
@@ -80,16 +99,8 @@ class Custom_Contact_Form
         // Add action to save customised CSS
         add_action('admin_init', [$this, 'saveCustomCss']);
 
-        /**
-         *  @since 1.2.2
-         */
+        // Add action to send email
         add_filter('wp_mail_content_type', [$this, 'set_email_content_type']);
-
-
-        $this->recaptcha_site_key = get_option('recaptcha_site_key');
-        $this->recaptcha_secret_key = get_option('recaptcha_secret_key');
-
-        
     }
 
     /**
@@ -138,14 +149,14 @@ class Custom_Contact_Form
     public function activation_message(): void
     {
         // Check if the option to hide the activation message is not set
-        if (!get_option('custom_contact_form_hide_activation_message')) {
+        if (!get_option(self::OPTION_HIDE_ACTIVATION_MESSAGE)) {
 
             printf(
                 '<div class="notice notice-success is-dismissible custom-activation-message">
                     <p><strong>🤩 %s Custom Contact Form plugin!</strong></p>
                     <p>%s <a href="%s">Custom Contact Form %s</a> page.</p>
                     <p>%s</p>
-                    <form method="post" action=""><button type="submit" name="custom_contact_form_hide_activation_message" value="1" class="button">%s</button></form>
+                    <form method="post" action=""><button type="submit" name="'.self::OPTION_HIDE_ACTIVATION_MESSAGE.'" value="1" class="button">%s</button></form>
                   </div>',
                 __('Thank you for installing the '),
                 __('To configure the plugin settings, please visit the'),
@@ -165,8 +176,8 @@ class Custom_Contact_Form
     public function hide_activation_message(): void
     {
         // Check if the option to hide the activation message has been checked
-        if (isset($_POST['custom_contact_form_hide_activation_message']) && $_POST['custom_contact_form_hide_activation_message'] === '1') {
-            update_option('custom_contact_form_hide_activation_message', '1');
+        if (isset($_POST[self::OPTION_HIDE_ACTIVATION_MESSAGE]) && $_POST[self::OPTION_HIDE_ACTIVATION_MESSAGE] === '1') {
+            update_option(self::OPTION_HIDE_ACTIVATION_MESSAGE, '1');
         }
     }
 
@@ -380,18 +391,18 @@ class Custom_Contact_Form
     {
         register_setting(
             'custom_contact_form_group',
-            'custom_contact_form_email',
+            self::OPTION_RECIPIENT_EMAILS,
             [$this, 'sanitize_email_addresses']
         );
 
         register_setting(
             'custom_contact_form_group',
-            'recaptcha_site_key'
+            self::OPTION_RECAPTCHA_SITE_KEY
         );
 
         register_setting(
             'custom_contact_form_group',
-            'recaptcha_secret_key'
+            self::OPTION_RECAPTCHA_SECRET_KEY
         );
 
         add_settings_section(
@@ -410,7 +421,7 @@ class Custom_Contact_Form
 
 
         add_settings_field(
-            'custom_contact_form_email',
+            self::OPTION_RECIPIENT_EMAILS,
             __('Destination Email(s)'),
             [$this, 'email_field_callback'],
             'custom_contact_form_settings',
@@ -419,7 +430,7 @@ class Custom_Contact_Form
 
         // Add a field for the blacklist in the admin settings
         add_settings_field(
-            'custom_contact_form_blacklist',
+            self::OPTION_BLACKLISTED_COUNTRIES,
             __('Blacklisted Countries'),
             [$this, 'render_blacklist_field'],
             'custom_contact_form_settings',
@@ -427,7 +438,7 @@ class Custom_Contact_Form
         );
 
         add_settings_field(
-            'recaptcha_site_key',
+            self::OPTION_RECAPTCHA_SITE_KEY,
             'reCAPTCHA Site Key',
             [$this, 'recaptcha_site_key_callback'],
             'custom_contact_form_settings',
@@ -435,7 +446,7 @@ class Custom_Contact_Form
         );
 
         add_settings_field(
-            'recaptcha_secret_key',
+            self::OPTION_RECAPTCHA_SECRET_KEY,
             'reCAPTCHA Secret Key',
             [$this, 'recaptcha_secret_key_callback'],
             'custom_contact_form_settings',
@@ -461,7 +472,7 @@ class Custom_Contact_Form
      */
     public function email_field_callback(): void
     {
-        $value = get_option('custom_contact_form_email');
+        $value = get_option(self::OPTION_RECIPIENT_EMAILS);
         $emails = explode(',', $value);
 
         foreach ($emails as $email) {
@@ -503,7 +514,7 @@ class Custom_Contact_Form
                 $valid_emails[] = $email;
             } else {
                 add_settings_error(
-                    'custom_contact_form_email',
+                    self::OPTION_RECIPIENT_EMAILS,
                     'invalid-email',
                     sprintf(__('Invalid email address') . ': %s', esc_html($email)),
                     'error'
@@ -513,12 +524,12 @@ class Custom_Contact_Form
 
         if (empty($valid_emails)) {
             add_settings_error(
-                'custom_contact_form_email',
+                self::OPTION_RECIPIENT_EMAILS,
                 'invalid-email',
                 __('Please enter at least one valid email address.'),
                 'error'
             );
-            return get_option('custom_contact_form_email'); // Revert to the previous value
+            return get_option(self::OPTION_RECIPIENT_EMAILS); // Revert to the previous value
         }
 
         return implode(',', $valid_emails);
@@ -532,7 +543,7 @@ class Custom_Contact_Form
      */
     function render_blacklist_field(): void
     {
-        $blacklist = get_option('custom_contact_form_blacklist', implode(',', $this->DefaultBlacklistedCountries));
+        $blacklist = get_option(self::OPTION_BLACKLISTED_COUNTRIES, implode(',', $this->DefaultBlacklistedCountries));
         echo '<input type="text" name="custom_contact_form_blacklist" value="' . esc_attr($blacklist) . '" />';
         echo '<p class="description">' . __('Enter a comma-separated list of country codes to blacklist.') . '</p>';
     }
@@ -545,7 +556,7 @@ class Custom_Contact_Form
      */
     function register_blacklist_setting(): void
     {
-        register_setting('custom_contact_form_group', 'custom_contact_form_blacklist');
+        register_setting('custom_contact_form_group', self::OPTION_BLACKLISTED_COUNTRIES);
     }
 
     /**
@@ -558,8 +569,8 @@ class Custom_Contact_Form
      */
     public function recaptcha_site_key_callback(): void
     {
-        $site_key = get_option('recaptcha_site_key', '');
-        echo '<input type="text" id="recaptcha_site_key" name="recaptcha_site_key" value="' . esc_attr($site_key) . '" />';
+        $site_key = get_option(self::OPTION_RECAPTCHA_SITE_KEY, '');
+        echo '<input type="text" id='.self::OPTION_RECAPTCHA_SITE_KEY.' name="'.self::OPTION_RECAPTCHA_SITE_KEY.'" value="' . esc_attr($site_key) . '" />';
     }
 
     /**
@@ -572,8 +583,8 @@ class Custom_Contact_Form
      */
     public function recaptcha_secret_key_callback(): void
     {
-        $secret_key = get_option('recaptcha_secret_key', '');
-        echo '<input type="text" id="recaptcha_secret_key" name="recaptcha_secret_key" value="' . esc_attr($secret_key) . '" />';
+        $secret_key = get_option(self::OPTION_RECAPTCHA_SECRET_KEY, '');
+        echo '<input type="text" id="'.self::OPTION_RECAPTCHA_SECRET_KEY.'" name="'.self::OPTION_RECAPTCHA_SECRET_KEY.'" value="' . esc_attr($secret_key) . '" />';
     }
 
     /**
@@ -599,7 +610,7 @@ class Custom_Contact_Form
     {
         register_setting(
             'custom_contact_form_group',
-            'custom_contact_form_custom_css',
+            self::OPTION_CUSTOM_CSS,
             [$this, 'sanitize_custom_css']
         );
 
@@ -611,7 +622,7 @@ class Custom_Contact_Form
         );
 
         add_settings_field(
-            'custom_contact_form_custom_css',
+            self::OPTION_CUSTOM_CSS,
             __('Custom CSS Code'),
             [$this, 'custom_css_field_callback'],
             'custom_contact_form_settings',
@@ -641,10 +652,10 @@ class Custom_Contact_Form
     public function custom_css_field_callback(): void
     {
         // Get the custom CSS from the plugin settings
-        $custom_css = get_option('custom_contact_form_custom_css', file_get_contents(__DIR__ . '/css/custom-contact-form.css'));
+        $custom_css = get_option(self::OPTION_CUSTOM_CSS, file_get_contents(__DIR__ . '/css/custom-contact-form.css'));
 
         // Display the textarea with the custom CSS
-        echo '<textarea name="custom_contact_form_custom_css" rows="8" cols="50">' . esc_textarea($custom_css) . '</textarea>';
+        echo '<textarea name="'.self::OPTION_CUSTOM_CSS.'" rows="8" cols="50">' . esc_textarea($custom_css) . '</textarea>';
     }
 
     /**
@@ -669,9 +680,9 @@ class Custom_Contact_Form
      */
     public function saveCustomCss()
     {
-        if (isset($_POST['custom_contact_form_custom_css'])) {
-            $customCss = sanitize_text_field($_POST['custom_contact_form_custom_css']);
-            update_option('custom_contact_form_custom_css', $customCss);
+        if (isset($_POST[self::OPTION_CUSTOM_CSS])) {
+            $customCss = sanitize_text_field($_POST[self::OPTION_CUSTOM_CSS]);
+            update_option(self::OPTION_CUSTOM_CSS, $customCss);
         }
     }
 
@@ -684,14 +695,14 @@ class Custom_Contact_Form
         if (
             $this->is_valid_submission()
         ) {
-            $to = get_option('custom_contact_form_email');
+            $to = get_option(self::OPTION_RECIPIENT_EMAILS);
             if (empty($to)) {
                 $this->display_error_message(__('No recipient email!'));
                 return false;
             }
 
             //Get blacklisted country codes
-            $blacklist = explode(',', get_option('custom_contact_form_blacklist', implode(',', $this->DefaultBlacklistedCountries)));
+            $blacklist = explode(',', get_option(self::OPTION_BLACKLISTED_COUNTRIES, implode(',', $this->DefaultBlacklistedCountries)));
 
             //Check for ip
             $ipdata = $this->getCountryFromIP($_SERVER['REMOTE_ADDR']);
@@ -724,7 +735,7 @@ class Custom_Contact_Form
             // Check if the data is not empty
             if (!empty($name) && !empty($email) && !empty($message)) {
                 apply_filters('wp_mail_content_type', 'text/html');
-                $result = wp_mail($to, $subject, $message, $headers);
+                $result = wp_mail(explode(',',$to), $subject, $message, $headers);
 
                 apply_filters('wp_mail_content_type', 'text/plain');
 
