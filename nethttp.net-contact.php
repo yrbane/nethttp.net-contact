@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.3.4
+ * Version: 1.3.5
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.3.4
+ * @version 1.3.5
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form

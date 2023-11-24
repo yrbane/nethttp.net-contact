@@ -1,0 +1,13 @@
+{
+    "name": "yrbane/nethttp.net-contact",
+    "description": "A custom contact form plugin with some antispam features",
+    "type": "wordpress-plugin",
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "yrbane",
+            "email": "yrbane@nethttp.net"
+        }
+    ],
+    "require": {}
+}
