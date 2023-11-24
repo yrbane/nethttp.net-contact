@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4
+Logging reason of ban
+Minor refactoring
+
 ## 1.3.3
 Improving security. 
 Some Ips are banned now if submission is not valid and cannot resubmit.

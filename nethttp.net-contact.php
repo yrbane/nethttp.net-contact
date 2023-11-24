@@ -4,7 +4,7 @@
  * Plugin Name: nethttp.net-contact
  * Plugin URI: https://github.com/yrbane/nethttp.net-contact
  * Description: A custom contact form plugin for WordPress. Once the plugin is activated, you can use the `[custom_contact_form]` shortcode to embed a contact form on your posts or pages.
- * Version: 1.3.3
+ * Version: 1.3.4
  * Author: Barney <yrbane@nethttp.net>
  * Author URI: https://github.com/yrbane
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  *
  * A custom contact form plugin for WordPress.
  *
- * @version 1.3.3
+ * @version 1.3.4
  * @author yrbane@nethttp.net
  */
 class Custom_Contact_Form
@@ -31,6 +31,7 @@ class Custom_Contact_Form
     const OPTION_RECAPTCHA_SECRET_KEY = 'recaptcha_secret_key';
     const OPTION_CUSTOM_CSS = 'custom_contact_form_custom_css';
     const OPTION_CUSTOM_CONTACT_FORM_ID = 'custom_contact_form';
+    const OPTION_CUSTOM_CONTACT_DB_VERSION = 'custom_contact_form_db_version';
 
     /**
      * @const string banned ips table name
@@ -85,6 +86,11 @@ class Custom_Contact_Form
         // Ask user if they want to delete all plugin data
         if (isset($_GET['delete_plugin_data']) && $_GET['delete_plugin_data'] === 'true') {
             $this->delete_plugin_data();
+        }
+
+        // Check if db option exists or if it is outdated
+        if (get_option(self::OPTION_CUSTOM_CONTACT_DB_VERSION) != 2) {
+            $this->update_banned_ips_table();
         }
     }
 
@@ -168,7 +174,7 @@ class Custom_Contact_Form
         );
     }
 
-   
+
     /**
      * Delete all plugin data.
      * @since 1.3.3
@@ -177,9 +183,9 @@ class Custom_Contact_Form
      */
     private function delete_plugin_data(): void
     {
-        if(WP_DEBUG){
+        if (WP_DEBUG) {
             return;
-        }    
+        }
         // Delete all options
         delete_option(self::OPTION_HIDE_ACTIVATION_MESSAGE);
         delete_option(self::OPTION_BLACKLISTED_COUNTRIES);
@@ -225,6 +231,32 @@ class Custom_Contact_Form
         ) $charset_collate;";
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        $this->update_banned_ips_table();
+    }
+
+    /**
+     * Creates a table to store banned IP addresses and updates the table if necessary.
+     *
+     * @return void
+     */
+    private function update_banned_ips_table(): void
+    {
+        /**
+         * The name of the table for banned IP addresses.
+         *
+         * @var string
+         */
+        $tableName = $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME;
+
+        // Check if the 'reason_for_ban' column already exists in the table
+        $columnExists = $this->wpdb->get_var("SHOW COLUMNS FROM $tableName LIKE 'reason_for_ban'");
+
+        // If the column doesn't exist, add it
+        if (!$columnExists) {
+            $alterSql = "ALTER TABLE $tableName ADD COLUMN reason TEXT NOT NULL AFTER `message`";
+            $this->wpdb->query($alterSql);
+        }
+        update_option(self::OPTION_CUSTOM_CONTACT_DB_VERSION, 2);
     }
 
     /**
@@ -233,18 +265,17 @@ class Custom_Contact_Form
      * @param string $sql
      * @return array     *
      */
-    private function query(string $sql,$sql_param=null): array
+    private function query(string $sql, $sql_param = null): array
     {
         $table_name = $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME;
-        if(is_null($sql_param)){
+        if (is_null($sql_param)) {
             $this->wpdb->query(sprintf($sql, $table_name));
+        } else {
+            $sql = $this->wpdb->prepare($sql, $sql_param);
+            return $this->wpdb->get_results($sql);
         }
-        else{
-            $sql = $this->wpdb->prepare( $sql , $sql_param );
-            return $this->wpdb->get_results( $sql );
-        }
-        
-        
+
+
         return $this->wpdb->last_result;
     }
 
@@ -909,18 +940,18 @@ class Custom_Contact_Form
             }
 
             // Check if the message is in banned_ips table
-            $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE `message` = '" . esc_sql($_POST['contact_form_message']) . "'");
+            $result = $this->query("SELECT * FROM " . $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME . " WHERE `message` = '" . esc_sql($_POST['contact_form_message']) . "'");
             if (!empty($result)) {
                 $this->display_error_message(__('Unauthorized submission'));
-                $this->ban_ip($ip);
+                $this->ban_ip($ip, 'already banned message');
                 return false;
             }
 
             // Check if the email is in banned_ips table
-            $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE `email` = '" . esc_sql($_POST['contact_form_email']) . "'");
+            $result = $this->query("SELECT * FROM " . $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME . " WHERE `email` = '" . esc_sql($_POST['contact_form_email']) . "'");
             if (!empty($result)) {
                 $this->display_error_message(__('Unauthorized submission'));
-                $this->ban_ip($ip);
+                $this->ban_ip($ip, 'already banned email');
                 return false;
             }
 
@@ -956,7 +987,8 @@ class Custom_Contact_Form
             }
 
             $subject = sprintf('[%s] ' . __('Contact Form Submission from') . ' %s', $_SERVER['HTTP_HOST'], $name);
-            $headers = sprintf('From: %s <%s>', $name, $email);
+            $headers = sprintf('From: %s <%s>', $_SERVER['HTTP_HOST'], "contact@" . $_SERVER['HTTP_HOST']) . "\r\n";
+            $headers .= sprintf('Reply-to:: %s <%s>', $name, $email);
 
             // Check if the data is not empty
             if (!empty($name) && !empty($email) && !empty($message)) {
@@ -992,26 +1024,43 @@ class Custom_Contact_Form
 
     /**
      * Check if the form submission is valid.
+     *
      * @return bool
      * @since 1.0.0
      */
     private function is_valid_submission(): bool
     {
-        if (
-            isset($_SERVER['HTTP_USER_AGENT']) &&
-            !isset($_GET['spam']) &&
-            wp_verify_nonce($_POST['contact_form_nonce'], 'contact') &&
-            $this->is_same_origin_submission() &&
-            isset($_POST['contact_form_token']) &&
-            $_POST['contact_form_token'] === $_SESSION['contact_form_token'] &&
-            !$this->is_proxy()
-        ) {
+        $valid_user_agent = isset($_SERVER['HTTP_USER_AGENT']);
+        $not_spam_request = !isset($_GET['spam']);
+        $valid_nonce = wp_verify_nonce($_POST['contact_form_nonce'], 'contact');
+        $same_origin = $this->is_same_origin_submission();
+        $valid_token = isset($_POST['contact_form_token']) && $_POST['contact_form_token'] === $_SESSION['contact_form_token'];
+        $not_proxy = !$this->is_proxy();
+
+        if ($valid_user_agent && $not_spam_request && $valid_nonce && $same_origin && $valid_token && $not_proxy) {
             return true;
         }
 
         // If the form submission is invalid, ban the ip address of that client
         $ip = $_SERVER['REMOTE_ADDR'];
-        $this->ban_ip($ip);
+
+        // Determine the reason for the ban
+        $ban_reason = '';
+        if (!$valid_user_agent) {
+            $ban_reason = 'invalid user agent';
+        } elseif (!$not_spam_request) {
+            $ban_reason = 'spam request';
+        } elseif (!$valid_nonce) {
+            $ban_reason = 'invalid nonce';
+        } elseif (!$same_origin) {
+            $ban_reason = 'not same origin';
+        } elseif (!$valid_token) {
+            $ban_reason = 'invalid token';
+        } elseif ($not_proxy) {
+            $ban_reason = 'proxy detected';
+        }
+
+        $this->ban_ip($ip, $ban_reason);
 
         return false;
     }
@@ -1022,10 +1071,12 @@ class Custom_Contact_Form
      * This method adds the specified IP address to the .htaccess file to prevent it from accessing the site.
      *
      * @param string $ip The IP address to ban.
+     * 
+     * @param string $reason The reason for banning the IP address.
      *
      * @since 1.3.3
      */
-    private function ban_ip(string $ip): void
+    private function ban_ip(string $ip, string $reason = 'unknown'): void
     {
         // if the server is apache
         if (strpos($_SERVER['SERVER_SOFTWARE'], 'Apache') !== false) {
@@ -1037,7 +1088,7 @@ class Custom_Contact_Form
             }
 
             // Check if the .htaccess file exists
-            if (file_exists($htaccess)) {
+            if (file_exists($htaccess) && is_writable($htaccess)) {
                 // Check if the IP address is not already banned
                 if (strpos(file_get_contents($htaccess), $ip) === false) {
                     // Add the IP address to the .htaccess file
@@ -1059,7 +1110,8 @@ class Custom_Contact_Form
                 'city' => $geolocation['city'],
                 'email' => $_POST['contact_form_email'] ?? 'unknown',
                 'message' => $_POST['contact_form_message'] ?? 'unknown',
-                'date' => current_time('mysql')
+                'date' => current_time('mysql'),
+                'reason' => $reason
             )
         );
     }
@@ -1071,7 +1123,7 @@ class Custom_Contact_Form
      */
     private function is_ip_banned(string $ip): bool
     {
-        $result = $this->query("SELECT * FROM ".$this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME." WHERE ip = %s",$ip);
+        $result = $this->query("SELECT * FROM " . $this->wpdb->prefix . self::BANNED_IPS_TABLE_NAME . " WHERE ip = %s", $ip);
         return !empty($result);
     }
 
